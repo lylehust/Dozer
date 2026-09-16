@@ -5,6 +5,11 @@
 import Cocoa
 import Preferences
 import Defaults
+import KeyboardShortcuts
+
+extension KeyboardShortcuts.Name {
+    static let toggleMenuItems = Self("toggleMenuItems")
+}
 
 extension Defaults.Keys {
     static let hideOnLogin: Defaults.Key<Bool> = Key<Bool>("hideOnLogin", default: false)
@@ -18,12 +23,6 @@ extension Defaults.Keys {
     static let buttonPadding: Defaults.Key<CGFloat> = Key<CGFloat>("buttonPadding", default: 25)
     static let animationEnabled: Defaults.Key<Bool> = Key<Bool>("animationEnabeld", default: false)
     static let isShortcutSet: Defaults.Key<Bool> = Key<Bool>("isShortcutSet", default: false)
-}
-
-struct UserDefaultKeys {
-    struct Shortcuts {
-        static let ToggleMenuItems: String = "toggleMenuItems"
-    }
 }
 
 extension NSStoryboard.Name {

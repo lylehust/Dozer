@@ -4,7 +4,7 @@
 
 import Cocoa
 import Preferences
-import MASShortcut
+import KeyboardShortcuts
 import LaunchAtLogin
 import Sparkle
 import Defaults
@@ -16,7 +16,13 @@ final class General: NSViewController, PreferencePane {
 
     override var nibName: NSNib.Name? { "General" }
 
-    fileprivate var userShortCut: MASShortcut!
+    /// The single updater owned by `AppDelegate`. Do not create a second
+    /// `SPUStandardUpdaterController` here, Sparkle expects one per process.
+    private var updaterController: SPUStandardUpdaterController {
+        AppDelegate.shared.sparkleUpdaterController
+    }
+
+    private var defaultsObserver: NSObjectProtocol?
 
     @IBOutlet private var LaunchAtLoginCheckbox: NSButton!
     @IBOutlet private var CheckForUpdatesCheckbox: NSButton!
@@ -28,7 +34,6 @@ final class General: NSViewController, PreferencePane {
     @IBOutlet private var ShowIconAndMenuCheckbox: NSButton!
     @IBOutlet private var FontSizePopUpButton: NSPopUpButton!
     @IBOutlet private var ButtonPaddingPopUpButton: NSPopUpButton!
-    @IBOutlet private var ToggleMenuItemsView: MASShortcutView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -36,11 +41,7 @@ final class General: NSViewController, PreferencePane {
         LaunchAtLoginCheckbox.focusRingType = .none
 
         LaunchAtLoginCheckbox.isChecked = LaunchAtLogin.isEnabled
-        if SUUpdater.shared() != nil {
-            CheckForUpdatesCheckbox.isChecked = SUUpdater.shared()!.automaticallyChecksForUpdates
-        } else {
-            CheckForUpdatesCheckbox.isChecked = false
-        }
+        CheckForUpdatesCheckbox.isChecked = updaterController.updater.automaticallyChecksForUpdates
 
         HideStatusBarIconsAtLaunchCheckbox.isChecked = Defaults[.hideAtLaunchEnabled]
         HideStatusBarIconsAfterDelayCheckbox.isChecked = Defaults[.hideAfterDelayEnabled]
@@ -51,14 +52,42 @@ final class General: NSViewController, PreferencePane {
         FontSizePopUpButton.selectItem(withTitle: "\(Int(Defaults[.iconSize])) px")
         ButtonPaddingPopUpButton.selectItem(withTitle: "\(Int(Defaults[.buttonPadding])) px")
 
-        ToggleMenuItemsView.associatedUserDefaultsKey = UserDefaultKeys.Shortcuts.ToggleMenuItems
-        view.addSubview(ToggleMenuItemsView)
+        addKeyboardShortcutRecorder()
         configureEnabledNoIconCheckbox()
 
-        ToggleMenuItemsView.shortcutValueChange = { _ -> Void in
-            self.userShortCut = self.ToggleMenuItemsView.shortcutValue
-            self.configureEnabledNoIconCheckbox()
+        // KeyboardShortcuts persists into UserDefaults, so observe that store to
+        // keep the "hide both icons" checkbox in sync. The guard inside
+        // `configureEnabledNoIconCheckbox` stops this from re-entering itself,
+        // which is what used to crash on modern macOS.
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.configureEnabledNoIconCheckbox()
         }
+    }
+
+    deinit {
+        if let defaultsObserver {
+            NotificationCenter.default.removeObserver(defaultsObserver)
+        }
+    }
+
+    /// Installs the shortcut recorder into the slot that the old
+    /// `MASShortcutView` occupied in General.xib.
+    private func addKeyboardShortcutRecorder() {
+        let recorder = KeyboardShortcuts.RecorderCocoa(for: .toggleMenuItems)
+        recorder.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(recorder)
+
+        NSLayoutConstraint.activate([
+            recorder.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            recorder.widthAnchor.constraint(equalToConstant: 105),
+            // Vertically centred on the "Show/hide menu bar icons" label,
+            // which sits at y = 17...34 in the nib.
+            recorder.centerYAnchor.constraint(equalTo: view.bottomAnchor, constant: -25)
+        ])
     }
 
     @IBAction private func launchAtLoginClicked(_ sender: NSButton) {
@@ -66,11 +95,8 @@ final class General: NSViewController, PreferencePane {
     }
 
     @IBAction private func automaticallyCheckForUpdatesClicked(_ sender: NSButton) {
-        guard SUUpdater.shared() != nil else {
-            CheckForUpdatesCheckbox.isChecked = false
-            return
-        }
-        SUUpdater.shared()!.automaticallyChecksForUpdates = CheckForUpdatesCheckbox.isChecked
+        updaterController.updater.automaticallyChecksForUpdates = (sender.state == .on)
+        CheckForUpdatesCheckbox.isChecked = updaterController.updater.automaticallyChecksForUpdates
     }
 
     @IBAction private func hideStatusBarIconsAtLaunchClicked(_ sender: NSButton) {
@@ -106,14 +132,14 @@ final class General: NSViewController, PreferencePane {
         DozerIcons.shared.enableRemoveDozerIcon = EnableRemoveDozerIconCheckbox.isChecked
     }
 
-    /// disables the noIcon-checkbox if no shortcut is set and keeps track whether shortcut is set
+    /// Disables the noIcon-checkbox if no shortcut is set and keeps track whether a shortcut is set.
     private func configureEnabledNoIconCheckbox() {
-        if ToggleMenuItemsView.shortcutValue == nil {
-            HideBothDozerIconsCheckbox.isEnabled = false
-            Defaults[.isShortcutSet] = false
-        } else {
-            HideBothDozerIconsCheckbox.isEnabled = true
-            Defaults[.isShortcutSet] = true
+        let hasShortcut = KeyboardShortcuts.getShortcut(for: .toggleMenuItems) != nil
+        HideBothDozerIconsCheckbox.isEnabled = hasShortcut
+        // Only write when the value actually changes, otherwise this observer
+        // would retrigger itself through UserDefaults.didChangeNotification.
+        if Defaults[.isShortcutSet] != hasShortcut {
+            Defaults[.isShortcutSet] = hasShortcut
         }
     }
 }

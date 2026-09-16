@@ -13,3 +13,11 @@ Gemfile.lock
 
 # Swiftgen
 Dozer/Other/Generated/
+
+# Local build/release scratch (never commit credentials or build output)
+.gh-config/
+.build-cache/
+DerivedData/
+dist/
+ExportOptions.plist
+sparkle-keys/

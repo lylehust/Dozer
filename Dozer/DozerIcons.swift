@@ -107,7 +107,7 @@ public final class DozerIcons {
             Defaults[.showIconAndMenuEnabled] = self.enableIconAndMenu
             if self.enableIconAndMenu == false {
                 _ = DozerIcons.toggleDockIcon(showIcon: false)
-                appDelegate.preferencesWindowController.show(preferencePane: .general)
+                AppDelegate.shared.preferencesWindowController.show(preferencePane: .general)
             }
         }
     }
@@ -181,8 +181,9 @@ public final class DozerIcons {
     }
 
     public func showIconAndMenu() {
-        if NSWorkspace.shared.frontmostApplication?.bundleIdentifier != AppInfo.bundleIdentifier {
-            previousApp = NSWorkspace.shared.frontmostApplication!
+        if let frontmostApp = NSWorkspace.shared.frontmostApplication,
+           frontmostApp.bundleIdentifier != AppInfo.bundleIdentifier {
+            previousApp = frontmostApp
         }
         if Defaults[.showIconAndMenuEnabled] {
             _ = DozerIcons.toggleDockIcon(showIcon: true)
@@ -355,7 +356,7 @@ public final class DozerIcons {
 
             for statusBarApp in statusBarAppsWindowInfo {
                 guard statusBarApp.owner == window.owner else { continue }
-                guard (statusBarApp.y + 22...statusBarApp.y + 30).contains(window.y) else { continue }
+                guard (statusBarApp.y + statusBarApp.height...statusBarApp.y + statusBarApp.height + 15).contains(window.y) else { continue }
 
                 return true
             }
@@ -402,11 +403,30 @@ public final class DozerIcons {
             }
         }
 
+        /// Status item windows live at window level 25 inside the menu bar.
+        ///
+        /// Their height tracks the menu bar height, which Apple has grown over
+        /// time: it was 22pt historically, and macOS 26 "Tahoe" draws a taller
+        /// bar. Hardcoding `height == 22` (as Dozer 4.x did) makes this
+        /// detection fail on modern systems, which in turn breaks auto-hide
+        /// (the app can no longer tell that the user is interacting with a
+        /// status item). Accept a range instead, whose upper bound is derived
+        /// from the live menu bar thickness so future releases keep working.
         var isStatusIcon: Bool {
-            guard level == 25 && height == 22 else {
+            guard level == 25 else {
                 return false
             }
-            return true
+            return (Window.minStatusIconHeight...Window.maxStatusIconHeight).contains(height)
         }
+
+        /// A status item is at least as tall as the classic 22pt menu bar.
+        static let minStatusIconHeight = 22
+
+        /// Upper bound. 37 is the value verified against macOS 26 (Tahoe);
+        /// anything taller is derived from the current menu bar thickness.
+        static let maxStatusIconHeight: Int = {
+            let menuBarThickness = Int(NSStatusBar.system.thickness.rounded(.up))
+            return max(37, menuBarThickness + 16)
+        }()
     }
 }

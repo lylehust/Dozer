@@ -9,7 +9,7 @@
 	<key>CFBundleIconFile</key>
 	<string>AppIcon.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.mortennn.Dozer</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -17,22 +17,22 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>4.2.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>30</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.13</string>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2020 Mortennn@GitHub. All rights reserved.</string>
+	<string>Copyright © 2020 Mortennn@GitHub. Fork maintained at github.com/lylehust/Dozer.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/Mortennn/Dozer/master/appcast.xml</string>
+	<string>https://github.com/lylehust/Dozer/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>97gvwr+B10rf6Exnj8yPuAXrYSu9yKikViJkYkvPMHY=</string>
+	<string>HFK6goZsZSkB4CkdVZoBQ/8xSt0HZYQMujde6wrZp1E=</string>
 </dict>
 </plist>

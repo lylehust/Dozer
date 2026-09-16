@@ -3,21 +3,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import Cocoa
-import MASShortcut
 import Sparkle
 import Defaults
 import Preferences
-
+import KeyboardShortcuts
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    static private(set) var shared: AppDelegate!
+
+    private let updaterController = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: nil
+    )
+
+    override init() {
+        super.init()
+        AppDelegate.shared = self
+    }
+
     func applicationDidFinishLaunching(_: Notification) {
-        MASShortcutBinder.shared()?.bindShortcut(withDefaultsKey: UserDefaultKeys.Shortcuts.ToggleMenuItems) { () in
+        KeyboardShortcuts.onKeyUp(for: .toggleMenuItems) {
             DozerIcons.shared.toggle()
         }
 
         // Initalize Dozer Icons
         _ = DozerIcons.shared
-        
+
         // If enabled hide menu bar icons at launch
         DozerIcons.shared.hideAtLaunch()
 
@@ -25,7 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // Show all Dozer icons when opening Dozer from Finder etc.
-    func applicationOpenUntitledFile(_ sender: NSApplication) -> Bool {
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows: Bool) -> Bool {
         DozerIcons.shared.showAll()
         return true
     }
@@ -41,4 +53,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         animated: true,
         hidesToolbarForSingleItem: true
     )
+
+    var sparkleUpdaterController: SPUStandardUpdaterController {
+        updaterController
+    }
 }

@@ -2,10 +2,27 @@
 <channel>
 <title>Dozer</title>
 <item>
-<title>4.0.0</title>
-<description><![CDATA[<h2>New features in version 4:</h2><ul><li>”Remove”-icon. Additional icon to hide/show icons with `option+click`</li><li>Auto-hide status bar icons #22</li><li>”No Icon”-mode. Hide/show only using keyboard shortcut</li></ul><h2>Other:</h2><ul><li>Improved UI in preferences</li></ul><ul>]]></description>
-<pubDate>Tue, 20 Aug 2019 13:01:53 +0200</pubDate>
-<sparkle:minimumSystemVersion>10.13</sparkle:minimumSystemVersion>
-<enclosure url="https://github.com/Mortennn/Dozer/releases/download/v4.0.0/Dozer.4.0.0.dmg" sparkle:version="27" sparkle:shortVersionString="4.0.0" length="8081734" type="application/octet-stream" sparkle:edSignature="CFXdt4FjQxevj6FfjDlpXQyHV7rYm8RGBRV8uw+nE6EulKvt04rLb8VBwjywG5GgqooXW78y073hO079KGkhAQ=="/>
+<title>5.0.0</title>
+<description><![CDATA[<h2>Dozer 5.0.0</h2>
+<p>Modernization release. The minimum supported macOS is now 14.0 (Sonoma).</p>
+<h3>Fixed</h3>
+<ul>
+<li>Dozer no longer crashes on macOS 26 “Tahoe”.</li>
+<li>Menu bar status items were assumed to be exactly 22pt tall; the menu bar is taller on current macOS, which broke auto-hide. The range is now derived from the live menu bar thickness.</li>
+<li>Preferences could crash through recursive <code>UserDefaults</code> change handling.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Universal binary (Apple Silicon + Intel) instead of Intel-only.</li>
+<li>Signed with a Developer ID certificate and notarized by Apple.</li>
+<li>Dependencies migrated from Carthage to Swift Package Manager.</li>
+<li>Sparkle 1.26 → 2.x; update checks now use this fork's feed.</li>
+<li><code>MASShortcut</code> replaced with <code>KeyboardShortcuts</code>.</li>
+<li>Launch at login now uses <code>SMAppService</code> via <code>LaunchAtLogin-Modern</code>.</li>
+<li><code>Defaults</code> and <code>Preferences</code> updated to current releases.</li>
+</ul>]]></description>
+<pubDate>Wed, 16 Sep 2026 16:13:49 -0400</pubDate>
+<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+<enclosure url="https://github.com/lylehust/Dozer/releases/download/v5.0.0/Dozer-5.0.0-universal.dmg" sparkle:version="50" sparkle:shortVersionString="5.0.0" length="2226452" type="application/octet-stream" sparkle:edSignature="Hl7cs/zzPFLmwT7BJfc1V5Jue+Tzd4drNxVilIh5cIai8xWKKQy5ejmeyatruyGCbf1BksOPtVATCq3V0M73Dw=="/>
 </item>
 </channel></rss>
