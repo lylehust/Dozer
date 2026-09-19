@@ -1,5 +1,39 @@
 # Changelog
 
+## Version 5.0.1
+
+Fixes found while reviewing 5.0.0.
+
+Fixed:
+* **Repeating-timer leak.** Every hide/show cycle started another 0.5s timer
+  without invalidating the previous one. The run loop retained the orphan, so
+  it kept running forever and could never be stopped. Because each tick
+  enumerates every on-screen window, the cost compounded with use — the likely
+  cause of the long-standing high-CPU and memory reports (upstream #211).
+  Timers are now invalidated before being replaced.
+* Removed three `fatalError` calls from the status-icon lookup. It is reachable
+  during normal use, so a transiently missing status item crashed the app
+  instead of being ignored.
+* The status-icon lookup compared on-screen x positions for equality, and a
+  status item with no window reported `0`. That could select or remove the
+  wrong icon; selection is now by identity, and icons without a known position
+  are excluded.
+* `AppInfo.bundleIdentifier` force-unwrapped `Bundle.main.bundleIdentifier`.
+* Sparkle's updater is now started from `applicationDidFinishLaunching`, as
+  Sparkle expects, rather than during `AppDelegate.init()`.
+* The hardcoded `"Dozer"` window-owner check now uses the real process name.
+
+Internal:
+* `Scripts/release.sh` derives the version from `project.yml` (the old default
+  resolved to the literal string `$(MARKETING_VERSION)`, since Info.plist holds
+  build-setting references), fetches the Sparkle tools it needs instead of
+  assuming they exist, emits the correct `sparkle:version`, and refuses to
+  release if the app's `SUPublicEDKey` does not match the signing key.
+* `make release` now runs the real signing/notarization pipeline. It previously
+  produced an ad-hoc signed archive while claiming to be signed.
+* Removed a leftover debug `print`, an unused import, a stale `.gitignore`
+  entry, and the process-lifetime cache of the menu bar height.
+
 ## Version 5.0.0
 
 Modernization release. The minimum supported macOS is now 14.0 (Sonoma).

@@ -2,6 +2,22 @@
 <channel>
 <title>Dozer</title>
 <item>
+<title>5.0.1</title>
+<description><![CDATA[<h2>Dozer 5.0.1</h2>
+<p>A bug-fix release for 5.0.0. No new features; updating is recommended.</p>
+<h3>Fixed</h3>
+<ul>
+<li><b>A timer leak that made the app get slower the longer you used it.</b> Every hide/show cycle started another 0.5s timer without stopping the previous one, and the run loop kept the old one alive forever. Each tick scans every on-screen window, so the cost stacked up with use. This is very likely the cause of the long-standing high-CPU and memory reports (upstream #211).</li>
+<li>Removed three <code>fatalError</code> calls from the status-icon lookup that could crash the app when an icon was momentarily missing.</li>
+<li>Icons could be selected or removed incorrectly: the lookup compared on-screen positions for equality, and an icon with no window reported a position of <code>0</code>.</li>
+<li>The menu bar height is now read live rather than cached for the process lifetime.</li>
+<li>Sparkle's updater starts after the app finishes launching, as Sparkle expects.</li>
+</ul>]]></description>
+<pubDate>Sat, 19 Sep 2026 12:34:32 -0400</pubDate>
+<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+<enclosure url="https://github.com/lylehust/Dozer/releases/download/v5.0.1/Dozer-5.0.1-universal.dmg" sparkle:version="51" sparkle:shortVersionString="5.0.1" length="2226914" type="application/octet-stream" sparkle:edSignature="KhsMC7TcbuHM0BbtWqd9mNSukJ/dpR0Fqov7Qi/cWzYcPvU1lT4r+nBhdWbKvldiYymrxfDdVI+XI6B+XH94Dg=="/>
+</item>
+<item>
 <title>5.0.0</title>
 <description><![CDATA[<h2>Dozer 5.0.0</h2>
 <p>Modernization release. The minimum supported macOS is now 14.0 (Sonoma).</p>

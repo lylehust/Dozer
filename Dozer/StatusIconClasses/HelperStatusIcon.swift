@@ -31,10 +31,6 @@ class HelperstatusIcon {
         statusIconButton.sendAction(on: [.leftMouseDown, .rightMouseDown])
     }
 
-    deinit {
-        print("status item has been deallocated")
-    }
-
     func show() {
         statusIcon.length = StatusIconLength.show
     }
@@ -88,11 +84,15 @@ class HelperstatusIcon {
         statusIcon.length == StatusIconLength.hide
     }
 
-    var xPositionOnScreen: CGFloat {
+    /// Horizontal position of the status item, or `nil` when it has no window.
+    ///
+    /// Returning `0` for a missing window is wrong: `0` is the left edge of the
+    /// main display, so hidden icons would compare equal to a real position and
+    /// left/right selection could pick the wrong icon.
+    var xPositionOnScreen: CGFloat? {
         guard let dozerIconFrame = statusIcon.button?.window?.frame else {
-            return 0
+            return nil
         }
-        let dozerIconXPosition = dozerIconFrame.origin.x
-        return dozerIconXPosition
+        return dozerIconFrame.origin.x
     }
 }

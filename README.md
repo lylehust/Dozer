@@ -29,7 +29,23 @@ Intel-only. On current Macs they run under Rosetta and crash on macOS 26
 menu bar. This fork keeps Dozer's original minimalist behaviour but updates
 the project so it builds and runs natively on modern macOS.
 
-## What's new in 5.0.0
+## What's new
+
+### 5.0.1
+
+A bug-fix release from a review of 5.0.0:
+
+- **Fixed a timer leak.** Every hide/show cycle started another repeating timer
+  without stopping the previous one; the run loop kept the orphan alive forever,
+  so the app got steadily busier the more you used it. This is very likely the
+  cause of the long-standing high-CPU and memory reports (upstream #211).
+- Removed three `fatalError` calls from the status-icon lookup that could crash
+  the app when an icon was momentarily missing.
+- Status icons are now selected by identity. They used to be matched by
+  comparing on-screen positions for equality, and an icon with no window
+  reported `0`, which could pick or remove the wrong icon.
+
+### 5.0.0
 
 - **Runs on macOS 26 (Tahoe) and later.** Dozer 4.x assumed every menu bar
   status item was exactly 22pt tall, which stopped being true when Apple made
@@ -90,12 +106,18 @@ brew bundle            # xcodegen, swiftlint, swiftformat
 make setup             # generate Dozer.xcodeproj
 make build             # build
 make run               # build and launch
-make release           # signed universal Release archive
+make release           # archive, Developer ID sign, notarize, staple, package DMG
 ```
 
-Releasing also requires exporting the archive with `ExportOptions.plist`
-(Developer ID) and notarizing the resulting DMG — see
-`Scripts/release.sh`.
+`make release` delegates to `Scripts/release.sh`, which is the single signing
+path: it archives, exports with Developer ID (re-signing Sparkle's nested
+helpers, which ship ad-hoc signed and would otherwise fail notarization),
+notarizes and staples both the app and the DMG, then prints the signed
+`appcast.xml` enclosure. Publishing needs `Developer ID Application` in your
+keychain, an authenticated `asc`, and a Sparkle Ed25519 key pair in
+`sparkle-keys/` — see the header of that script.
+
+Release history lives in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

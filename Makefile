@@ -16,11 +16,10 @@ run: build
 	@APP_PATH="$$(DEVELOPER_DIR="$(DEVELOPER_DIR)" xcodebuild -project "$(PROJECT)" -scheme "$(SCHEME)" -configuration "$(CONFIGURATION)" -showBuildSettings | awk -F ' = ' '/ TARGET_BUILD_DIR / { dir=$$2 } / WRAPPER_NAME / { name=$$2 } END { print dir "/" name }')"; \
 	open "$$APP_PATH"
 
-# Build a signed, universal (arm64 + x86_64) Release archive.
-release: setup
-	@DEVELOPER_DIR="$(DEVELOPER_DIR)" xcodebuild archive \
-		-project "$(PROJECT)" -scheme "$(SCHEME)" -configuration Release \
-		-destination "generic/platform=macOS" \
-		-archivePath build/Dozer.xcarchive
+# Build, Developer ID sign, notarize, staple and package a Release DMG.
+# `release` delegates to Scripts/release.sh so there is one signing path; an
+# archive built any other way is ad-hoc signed and will not notarize.
+release:
+	@Scripts/release.sh "$(VERSION)"
 
 .PHONY: setup project build run release

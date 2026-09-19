@@ -11,7 +11,12 @@ import KeyboardShortcuts
 final class AppDelegate: NSObject, NSApplicationDelegate {
     static private(set) var shared: AppDelegate!
 
-    private let updaterController = SPUStandardUpdaterController(
+    /// Sparkle's updater.
+    ///
+    /// Created lazily and started from `applicationDidFinishLaunching`, which is
+    /// when Sparkle expects an updater to begin. Building it eagerly in `init()`
+    /// would start it before the app has finished launching.
+    private(set) lazy var sparkleUpdaterController = SPUStandardUpdaterController(
         startingUpdater: true,
         updaterDelegate: nil,
         userDriverDelegate: nil
@@ -23,6 +28,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_: Notification) {
+        // Touch the controller so the updater starts now that launch is complete.
+        _ = sparkleUpdaterController
+
         KeyboardShortcuts.onKeyUp(for: .toggleMenuItems) {
             DozerIcons.shared.toggle()
         }
@@ -53,8 +61,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         animated: true,
         hidesToolbarForSingleItem: true
     )
-
-    var sparkleUpdaterController: SPUStandardUpdaterController {
-        updaterController
-    }
 }

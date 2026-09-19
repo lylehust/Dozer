@@ -35,7 +35,10 @@ extension Preferences.PaneIdentifier {
 }
 
 struct AppInfo {
-    static let bundleIdentifier: String = Bundle.main.bundleIdentifier!
+    /// Falls back to the build's bundle identifier rather than force-unwrapping:
+    /// `Bundle.main.bundleIdentifier` is optional and a nil here would crash on
+    /// a path used by every show/hide cycle.
+    static let bundleIdentifier: String = Bundle.main.bundleIdentifier ?? "com.lylehust.Dozer"
     static var releaseVersionNumber: String? {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
     }

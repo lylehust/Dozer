@@ -8,9 +8,12 @@ import Defaults
 public final class DozerIcons {
     static var shared = DozerIcons()
     private var dozerIcons: [HelperstatusIcon] = []
-    private var timerToCheckUserInteraction = Timer()
-    private var timerToHideDozerIcons = Timer()
+    private var timerToCheckUserInteraction: Timer?
+    private var timerToHideDozerIcons: Timer?
     private var previousApp = NSRunningApplication()
+
+    /// Process name as it appears in `kCGWindowOwnerName`.
+    private static let ownerName = ProcessInfo.processInfo.processName
 
     private init() {
         dozerIcons.append(NormalStatusIcon())
@@ -34,11 +37,20 @@ public final class DozerIcons {
     }
 
     private func startUserInteractionTimer() {
+        // Always invalidate the previous timer first. `Timer.scheduledTimer`
+        // makes the run loop retain the timer, so merely overwriting the stored
+        // reference would orphan it: it would keep firing every 0.5s for the
+        // lifetime of the process and could never be invalidated. Since each
+        // tick enumerates every on-screen window, leaked timers compound into
+        // steadily rising CPU and memory use.
+        stopUserInteractionTimer()
+
         guard Defaults[.hideAfterDelayEnabled] else {
-            stopUserInteractionTimer()
             return
         }
-        timerToCheckUserInteraction = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+
+        timerToCheckUserInteraction = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self else { return }
             if self.isUserInteractingWithStatusBar() {
                 self.resetTimer()
             }
@@ -46,7 +58,8 @@ public final class DozerIcons {
     }
 
     private func stopUserInteractionTimer() {
-        timerToCheckUserInteraction.invalidate()
+        timerToCheckUserInteraction?.invalidate()
+        timerToCheckUserInteraction = nil
     }
 
     // MARK: Observe changes to settings
@@ -78,8 +91,12 @@ public final class DozerIcons {
         let normalStatusIconsCount = dozerIcons.filter { $0.type == .normal}.count
         if hideBothDozerIcons && Defaults[.isShortcutSet] {
             if normalStatusIconsCount == 2 {
-                let rightDozerIconXPos = get(dozerIcon: .normalRight).xPositionOnScreen
-                dozerIcons.removeAll { $0.xPositionOnScreen == rightDozerIconXPos }
+                // Remove by identity. Comparing on-screen x positions was
+                // unreliable: an icon whose window is not on screen used to
+                // report 0, so the wrong icon could be removed.
+                if let rightDozerIcon = get(dozerIcon: .normalRight) {
+                    dozerIcons.removeAll { $0 === rightDozerIcon }
+                }
             }
         } else if !hideBothDozerIcons && Defaults[.isShortcutSet] || !Defaults[.isShortcutSet] {
             if normalStatusIconsCount == 1 {
@@ -165,7 +182,7 @@ public final class DozerIcons {
     }
 
     public func toggle() {
-        if get(dozerIcon: .normalLeft).isShown {
+        if get(dozerIcon: .normalLeft)?.isShown == true {
             hide()
         } else {
             show()
@@ -173,7 +190,7 @@ public final class DozerIcons {
     }
 
     public func toggleRemove() {
-        if get(dozerIcon: .remove).isShown {
+        if get(dozerIcon: .remove)?.isShown == true {
             perform(action: .hide, statusIcon: .remove)
         } else {
             perform(action: .show, statusIcon: .remove)
@@ -210,7 +227,7 @@ public final class DozerIcons {
 
     public func handleOptionClick() {
         showIconAndMenu()
-        if get(dozerIcon: .normalLeft).isShown {
+        if get(dozerIcon: .normalLeft)?.isShown == true {
             DozerIcons.shared.perform(
                 action: .toggle,
                 statusIcon: .remove
@@ -257,17 +274,20 @@ public final class DozerIcons {
 
     // MARK: timerToHideDozerIcons methods
     private func startTimer() {
+        stopTimer()
+
         guard Defaults[.hideAfterDelayEnabled] else {
-            stopTimer()
             return
         }
-        timerToHideDozerIcons = Timer.scheduledTimer(withTimeInterval: Defaults[.hideAfterDelay], repeats: false) { (_: Timer) -> Void in
-            self.willHideStatusBarIcons()
+
+        timerToHideDozerIcons = Timer.scheduledTimer(withTimeInterval: Defaults[.hideAfterDelay], repeats: false) { [weak self] (_: Timer) -> Void in
+            self?.willHideStatusBarIcons()
         }
     }
 
     private func stopTimer() {
-        timerToHideDozerIcons.invalidate()
+        timerToHideDozerIcons?.invalidate()
+        timerToHideDozerIcons = nil
     }
 
     func resetTimer() {
@@ -283,7 +303,9 @@ public final class DozerIcons {
                 return
             }
         }
-        let theStatusIcon: HelperstatusIcon = get(dozerIcon: statusIcon)
+        guard let theStatusIcon = get(dozerIcon: statusIcon) else {
+            return
+        }
         switch action {
         case .show:
             theStatusIcon.show()
@@ -294,28 +316,27 @@ public final class DozerIcons {
         }
     }
 
-    /// Will crash if trying to get ´DozerIcon´ which does not exist in the menu bar
-    private func get(dozerIcon: DozerIcon) -> HelperstatusIcon {
-        var normalStatusIconsXPosition: [CGFloat] = []
-        for statusIcon in dozerIcons where statusIcon.type == .normal {
-            normalStatusIconsXPosition.append(statusIcon.xPositionOnScreen)
-        }
+    /// Normal icons whose on-screen position is currently known.
+    ///
+    /// `xPositionOnScreen` is `nil` when a status item has no window, which
+    /// happens while an icon is hidden or during a display/menu-bar change.
+    /// Excluding those keeps left/right selection deterministic instead of
+    /// matching whichever icons happen to report 0.
+    private var positionedNormalIcons: [HelperstatusIcon] {
+        dozerIcons.filter { $0.type == .normal && $0.xPositionOnScreen != nil }
+    }
+
+    /// Returns the requested status icon, or `nil` when it is not currently in
+    /// the menu bar. Callers tolerate `nil` so that a transient missing status
+    /// item is a no-op rather than a crash.
+    private func get(dozerIcon: DozerIcon) -> HelperstatusIcon? {
         switch dozerIcon {
         case .remove:
-            guard let removeStatusIcon = dozerIcons.first(where: { $0.type == .remove }) else {
-                fatalError("Failed getting remove status icon")
-            }
-            return removeStatusIcon
+            return dozerIcons.first { $0.type == .remove }
         case .normalLeft:
-            guard let leftStatusIcon = dozerIcons.first(where: { $0.xPositionOnScreen == normalStatusIconsXPosition.min() }) else {
-                fatalError("Failed getting status icon on the left")
-            }
-            return leftStatusIcon
+            return positionedNormalIcons.min { ($0.xPositionOnScreen ?? 0) < ($1.xPositionOnScreen ?? 0) }
         case .normalRight:
-            guard let rightStatusIcon = dozerIcons.first(where: { $0.xPositionOnScreen == normalStatusIconsXPosition.max() }) else {
-                fatalError("Failed getting status icon on the right")
-            }
-            return rightStatusIcon
+            return positionedNormalIcons.max { ($0.xPositionOnScreen ?? 0) < ($1.xPositionOnScreen ?? 0) }
         }
     }
 
@@ -341,7 +362,7 @@ public final class DozerIcons {
         for windowInfo in windowInfoList {
             guard let window = Window(windowInfo),
                 // If the preferences window are close to the menu bar it won't auto hide
-                window.owner != "Dozer" else {
+                window.owner != DozerIcons.ownerName else {
                     continue
             }
 
@@ -424,9 +445,13 @@ public final class DozerIcons {
 
         /// Upper bound. 37 is the value verified against macOS 26 (Tahoe);
         /// anything taller is derived from the current menu bar thickness.
-        static let maxStatusIconHeight: Int = {
+        ///
+        /// Computed rather than cached: the menu bar can change height when the
+        /// user moves to a different display, and a `static let` would freeze
+        /// the first value read for the lifetime of the process.
+        static var maxStatusIconHeight: Int {
             let menuBarThickness = Int(NSStatusBar.system.thickness.rounded(.up))
             return max(37, menuBarThickness + 16)
-        }()
+        }
     }
 }
