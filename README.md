@@ -106,7 +106,9 @@ brew bundle            # xcodegen, swiftlint, swiftformat
 make setup             # generate Dozer.xcodeproj
 make build             # build
 make run               # build and launch
-make release           # archive, Developer ID sign, notarize, staple, package DMG
+make release           # both DMGs (universal + arm64)
+make arm               # Apple Silicon only
+make universal         # Intel + Apple Silicon only
 ```
 
 `make release` delegates to `Scripts/release.sh`, which is the single signing
@@ -116,6 +118,27 @@ notarizes and staples both the app and the DMG, then prints the signed
 `appcast.xml` enclosure. Publishing needs `Developer ID Application` in your
 keychain, an authenticated `asc`, and a Sparkle Ed25519 key pair in
 `sparkle-keys/` — see the header of that script.
+
+### Release variants
+
+| Variant | Architectures | Approx. size |
+|---|---|---|
+| `universal` | Intel + Apple Silicon | 2.2 MB |
+| `arm64` | Apple Silicon only | 1.4 MB |
+
+Select with `VARIANTS`, e.g. `VARIANTS=arm64 Scripts/release.sh`. Every run only
+ever writes files named for its own variants, so building `arm64` leaves an
+already-built universal image on disk untouched, and with `PUBLISH=1` it uploads
+alongside the existing assets rather than replacing them.
+
+Making an image genuinely arm64-only takes more than `ARCHS=arm64`: Xcode copies
+a prebuilt binary xcframework (Sparkle) whole, so its slices and its nested XPC
+services, `Updater.app` and `Autoupdate` stay universal. The script thins each of
+those with `lipo` and re-signs from the inside out, then verifies that nothing
+non-arm64 remains.
+
+The appcast must point at the **universal** image — it runs natively on both
+architectures, so it is the safe update target for every user.
 
 Release history lives in [CHANGELOG.md](CHANGELOG.md).
 
