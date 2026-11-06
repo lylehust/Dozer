@@ -12,6 +12,11 @@ public final class DozerIcons {
     private var timerToHideDozerIcons: Timer?
     private var previousApp = NSRunningApplication()
 
+    /// True while a macOS 27 menu bar restriction is hiding items.
+    private var isRestricted = false
+    private var hasWarnedAboutAccessibility = false
+    private var hasWarnedAboutLocation = false
+
     /// Process name as it appears in `kCGWindowOwnerName`.
     private static let ownerName = ProcessInfo.processInfo.processName
 
@@ -149,6 +154,11 @@ public final class DozerIcons {
 
     // MARK: Public methods
     public func hide() {
+        if hideUsingMenuBarRestriction() {
+            didHideStatusBarIcons()
+            hideIconAndMenu()
+            return
+        }
         perform(action: .hide, statusIcon: .remove)
         perform(action: .hide, statusIcon: .normalLeft)
         if Defaults[.noIconMode] && Defaults[.isShortcutSet] {
@@ -172,6 +182,7 @@ public final class DozerIcons {
 
     public func show() {
         resetTimer()
+        releaseMenuBarRestriction()
         perform(action: .hide, statusIcon: .remove)
         perform(action: .show, statusIcon: .normalLeft)
         if Defaults[.noIconMode] {
@@ -182,6 +193,16 @@ public final class DozerIcons {
     }
 
     public func toggle() {
+        // On macOS 27 the separators stay on screen while items are hidden, so
+        // "is the left dot hidden" no longer reflects the state; track it.
+        if MenuBarRestriction.shared.isAvailable {
+            if isRestricted {
+                show()
+            } else {
+                hide()
+            }
+            return
+        }
         if get(dozerIcon: .normalLeft)?.isShown == true {
             hide()
         } else {
@@ -219,6 +240,7 @@ public final class DozerIcons {
 
     /// Force show all Dozer icons
     public func showAll() {
+        releaseMenuBarRestriction()
         perform(action: .show, statusIcon: .remove)
         perform(action: .show, statusIcon: .normalLeft)
         perform(action: .show, statusIcon: .normalRight)
@@ -293,6 +315,107 @@ public final class DozerIcons {
     func resetTimer() {
         self.stopTimer()
         self.startTimer()
+    }
+
+    // MARK: macOS 27 menu bar restriction
+
+    /// Hides everything to the left of the leftmost separator using the macOS 27
+    /// allow-list.
+    ///
+    /// Returns false when this system cannot do it, so the caller falls back to
+    /// the legacy length-based behaviour (which still works below macOS 27).
+    private func hideUsingMenuBarRestriction() -> Bool {
+        let restriction = MenuBarRestriction.shared
+        guard restriction.isAvailable else {
+            NSLog("Dozer/27: MenuBarClientCore unavailable")
+            return false
+        }
+
+        // MenuBarAgent only honours the allow-list for apps under /Applications;
+        // running from anywhere else silently shows everything.
+        let inApplications = Bundle.main.bundlePath.hasPrefix("/Applications/")
+        let trusted = MenuBarItemScanner.isTrusted
+        let leftX = get(dozerIcon: .normalLeft)?.xPositionOnScreen
+        NSLog("Dozer/27: inApplications=%d trusted=%d leftX=%@ path=%@",
+              inApplications ? 1 : 0, trusted ? 1 : 0,
+              leftX.map { String(format: "%.0f", $0) } ?? "nil",
+              Bundle.main.bundlePath)
+
+        guard inApplications else {
+            warnMustRunFromApplications()
+            return false
+        }
+
+        guard trusted else {
+            MenuBarItemScanner.requestTrust()
+            warnAccessibilityRequired()
+            return false
+        }
+
+        guard let leftSeparatorX = leftX else {
+            NSLog("Dozer/27: no left separator position")
+            return false
+        }
+
+        let items = MenuBarItemScanner.scan()
+        NSLog("Dozer/27: scanned %d menu bar item(s)", items.count)
+        guard !items.isEmpty else { return false }
+
+        // Everything at or to the right of the left separator stays visible. The
+        // allow-list is per app, so an app with items on both sides keeps all of
+        // them — the closest this API allows to Dozer's positional model.
+        var allowed = Set(items.filter { $0.x >= leftSeparatorX }.map(\.bundleID))
+        allowed.insert(AppInfo.bundleIdentifier)
+
+        isRestricted = true
+        restriction.restrict(visibleBundleIDs: Array(allowed)) { [weak self] succeeded in
+            guard let self, !succeeded else { return }
+            self.isRestricted = false
+        }
+        return true
+    }
+
+    private func releaseMenuBarRestriction() {
+        guard isRestricted else { return }
+        MenuBarRestriction.shared.release()
+        isRestricted = false
+    }
+
+    private func warnAccessibilityRequired() {
+        guard !hasWarnedAboutAccessibility else { return }
+        hasWarnedAboutAccessibility = true
+        presentWarning(
+            title: "Dozer needs Accessibility access",
+            message: "macOS 27 hides menu bar items through Accessibility. Grant Dozer access in System Settings › Privacy & Security › Accessibility, then try again.",
+            settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        )
+    }
+
+    private func warnMustRunFromApplications() {
+        guard !hasWarnedAboutLocation else { return }
+        hasWarnedAboutLocation = true
+        presentWarning(
+            title: "Move Dozer to Applications",
+            message: "macOS 27 only lets an app in the Applications folder hide menu bar items. Move Dozer there and launch it again.",
+            settingsURL: nil
+        )
+    }
+
+    private func presentWarning(title: String, message: String, settingsURL: String?) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        if let settingsURL {
+            alert.addButton(withTitle: "Open Settings")
+            alert.addButton(withTitle: "Later")
+            if alert.runModal() == .alertFirstButtonReturn {
+                NSWorkspace.shared.open(URL(string: settingsURL)!)
+            }
+        } else {
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
     }
 
     // MARK: Private methods
