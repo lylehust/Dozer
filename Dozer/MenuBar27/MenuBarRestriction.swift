@@ -30,21 +30,26 @@ import Cocoa
 final class MenuBarRestriction {
     static let shared = MenuBarRestriction()
 
-    /// Apple's own menu bar agents. Their items are addressed by bundle id and
-    /// must stay allowed or the bar loses the clock and Control Centre.
+    /// The minimum the bar itself needs: MenuBarAgent draws the system items and
+    /// Control Centre owns the status items that share its bundle id. Everything
+    /// else is decided by position.
     private static let systemBundleIDs = [
         "com.apple.MenuBarAgent",
         "com.apple.controlcenter",
+    ]
+
+    /// Apple menu extras that survive a hide unless they are explicitly left out
+    /// of the allow-list.
+    ///
+    /// Siri and the input-source indicator are separate items under
+    /// `com.apple.systemuiserver` and `com.apple.TextInputMenuAgent`, but both
+    /// bundles also own items that legitimately sit to the right of a separator.
+    /// Because the allow-list is per bundle, a purely positional rule keeps the
+    /// left-hand item visible too. These two are therefore never allowed, which
+    /// is what lets them hide like any other icon.
+    private static let hiddenBundleIDs: Set<String> = [
         "com.apple.systemuiserver",
         "com.apple.TextInputMenuAgent",
-        "com.apple.Siri",
-        "com.apple.Spotlight",
-        "com.apple.wifi.WiFiAgent",
-        "com.apple.ScreenTimeAgent",
-        "com.apple.AirPlayUIAgent",
-        "com.apple.UserNotificationCenter",
-        "com.apple.notificationcenterui",
-        "com.apple.loginwindow",
     ]
 
     private static let frameworkPath =
@@ -89,7 +94,9 @@ final class MenuBarRestriction {
         // The identifier space is small and Apple has added to it, so allow a
         // generous range rather than a fixed list.
         let systemItems = (0..<64).map { NSNumber(value: $0) } as NSArray
-        let allowList = Set(Self.systemBundleIDs).union(visibleBundleIDs)
+        let allowList = Set(Self.systemBundleIDs)
+            .union(visibleBundleIDs)
+            .subtracting(Self.hiddenBundleIDs)
 
         guard let configuration = Self.makeConfiguration(
             configurationClass, systemItems: systemItems, bundleIDs: Array(allowList)

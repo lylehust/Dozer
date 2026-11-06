@@ -327,7 +327,6 @@ public final class DozerIcons {
     private func hideUsingMenuBarRestriction() -> Bool {
         let restriction = MenuBarRestriction.shared
         guard restriction.isAvailable else {
-            NSLog("Dozer/27: MenuBarClientCore unavailable")
             return false
         }
 
@@ -336,10 +335,6 @@ public final class DozerIcons {
         let inApplications = Bundle.main.bundlePath.hasPrefix("/Applications/")
         let trusted = MenuBarItemScanner.isTrusted
         let leftX = get(dozerIcon: .normalLeft)?.xPositionOnScreen
-        NSLog("Dozer/27: inApplications=%d trusted=%d leftX=%@ path=%@",
-              inApplications ? 1 : 0, trusted ? 1 : 0,
-              leftX.map { String(format: "%.0f", $0) } ?? "nil",
-              Bundle.main.bundlePath)
 
         guard inApplications else {
             warnMustRunFromApplications()
@@ -353,12 +348,10 @@ public final class DozerIcons {
         }
 
         guard let leftSeparatorX = leftX else {
-            NSLog("Dozer/27: no left separator position")
             return false
         }
 
         let items = MenuBarItemScanner.scan()
-        NSLog("Dozer/27: scanned %d menu bar item(s)", items.count)
         guard !items.isEmpty else { return false }
 
         // Everything at or to the right of the left separator stays visible. The

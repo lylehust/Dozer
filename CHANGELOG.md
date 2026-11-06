@@ -1,5 +1,28 @@
 # Changelog
 
+## Version 5.1.0
+
+Adds macOS 27 support. macOS 27 renders the whole menu bar as a single window, so
+Dozer's original mechanism — inflating a status item until its neighbours are
+pushed off screen — became a no-op: an oversized item is capped in width and its
+neighbours no longer move. Clicking a dot hid only the dot.
+
+Dozer now hides items through the menu bar allow-list that macOS 27 introduced:
+while an assertion is active, MenuBarAgent shows only the listed system items and
+bundle identifiers. Everything below macOS 27 still uses the original mechanism.
+
+New requirements on macOS 27:
+* Accessibility permission, needed to read which item belongs to which app and
+  where it sits. Dozer explains this and offers to open the setting.
+* The app must live in /Applications; MenuBarAgent ignores the allow-list
+  elsewhere. Dozer explains this too.
+
+Notes:
+* Hiding is per app rather than per item, because the allow-list is keyed by
+  bundle identifier. An app with items on both sides of a separator keeps both.
+* Siri and the input-source indicator are always left out of the allow-list so
+  they hide like any other icon.
+
 ## Version 5.0.1
 
 Fixes found while reviewing 5.0.0.
