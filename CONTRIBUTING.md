@@ -19,18 +19,33 @@ If you have a good idea for a feature or enhancement open an issue.
 Refresh the Dozer icons or logo. [Design resources for logo and status bar icon](https://www.figma.com/file/g5MhiwxR1YFg5vti0tPANa/Dozer).
 
 ## Code
-You can submit your own code. This can be bug fixes or new features. Please ask me (@Mortennn) before implementing a new feature. Check out [Issues](https://github.com/Mortennn/Dozer/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc).
+You can submit your own code. This can be bug fixes or new features. Please open
+an issue first so the approach can be agreed before you write it. Check out
+[Issues](https://github.com/lylehust/Dozer/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc).
 
 ### Getting started
-Make sure you have at least Xcode 10 installed.
+Make sure you have at least Xcode 26 and [XcodeGen](https://github.com/yonaskolb/XcodeGen)
+installed. Carthage is no longer used; dependencies come from Swift Package
+Manager.
 
 Run the following command:
 ```shell
-git clone https://github.com/mortennn/dozer &&
-cd dozer &&
+git clone https://github.com/lylehust/Dozer &&
+cd Dozer &&
 make build
 ```
 Done! The project should open automatically in Xcode.
+
+To build and launch without Xcode:
+
+```shell
+make run      # build and launch a Debug build
+make release  # signed universal + arm64 DMGs (needs a Developer ID identity)
+```
+
+macOS 27 support in `Dozer/MenuBar27/` talks to a private framework, so keep that
+code isolated and guard every lookup — the rest of the app must keep working if
+it ever disappears.
 
 ### Submitting your pull request
 Please give a small summary of what has changed. Also add any github issues links (`Fixes #100`).

@@ -1,5 +1,5 @@
 <p align="center">
-	<img width="200" height="200" margin-right="100%" src="https://raw.githubusercontent.com/Mortennn/Dozer/master/Stuff/AppIcon.png">
+	<img width="200" height="200" margin-right="100%" src="https://raw.githubusercontent.com/lylehust/Dozer/master/Stuff/AppIcon.png">
 </p>
 <p align="center">Hide menu bar icons to give your Mac a cleaner look.</p>
 <p align="center">
@@ -16,7 +16,7 @@
  	</a>
 </p>
 <p align="center">
-	<img height="100" min-width="100" src="https://github.com/Mortennn/Dozer/raw/master/Stuff/demo.gif" alt="demo">
+	<img height="100" min-width="100" src="https://github.com/lylehust/Dozer/raw/master/Stuff/demo.gif" alt="demo">
 </p>
 
 ## About this fork
@@ -24,12 +24,40 @@
 This is a maintained fork of [Mortennn/Dozer](https://github.com/Mortennn/Dozer).
 
 Upstream has not shipped a release since 4.0.0 (2019) and its binaries are
-Intel-only. On current Macs they run under Rosetta and crash on macOS 26
-"Tahoe" because they were built against long-removed assumptions about the
-menu bar. This fork keeps Dozer's original minimalist behaviour but updates
-the project so it builds and runs natively on modern macOS.
+Intel-only. On current Macs they run under Rosetta, crash on macOS 26 "Tahoe"
+and cannot hide anything on macOS 27, because they were built against removed
+assumptions about how the menu bar is drawn. This fork keeps Dozer's original
+minimalist behaviour but updates the project so it builds and runs natively on
+modern macOS.
 
 ## What's new
+
+### 5.1.0
+
+**Adds macOS 27 support.** macOS 27 rebuilt the menu bar as a single window, so
+Dozer's original trick — inflating a status item until its neighbours were
+pushed off screen — became a no-op: an oversized item is capped in width and its
+neighbours no longer move, so clicking a dot hid only the dot. Dozer now hides
+items through the allow-list macOS 27 introduced. Everything below macOS 27
+keeps using the original mechanism.
+
+On macOS 27 this adds two requirements:
+
+- **Accessibility permission**, needed to read which item belongs to which app
+  and where it sits relative to a separator. Dozer asks for it and offers to
+  open the setting.
+- **Dozer must live in `/Applications`.** The system ignores the allow-list for
+  apps anywhere else, and Dozer says so rather than failing silently.
+
+Known differences on macOS 27:
+
+- Hiding is **per app rather than per item**, because the allow-list is keyed by
+  bundle identifier. An app with items on both sides of a separator keeps both.
+- Siri and the input-source indicator are always left out of the allow-list, so
+  they hide like any other icon.
+- The mechanism relies on a private framework Apple has not documented. It is
+  loaded by name with every class and selector checked, so if it disappears
+  Dozer falls back to the old behaviour instead of crashing.
 
 ### 5.0.1
 
@@ -70,6 +98,10 @@ A bug-fix release from a review of 5.0.0:
 [Download the latest release](https://github.com/lylehust/Dozer/releases/latest),
 open the DMG and drag **Dozer** to your Applications folder.
 
+On macOS 27, grant **Accessibility** access when Dozer asks for it. Without it
+Dozer still runs, but it cannot hide anything — the system no longer exposes
+menu bar items in a way that does not need that permission.
+
 Homebrew Cask still points at the deprecated upstream build and is not
 recommended for this fork.
 
@@ -94,7 +126,27 @@ There are 2 or 3, numbered from right to left:
 * Right-click one of the Dozer icons to open the settings
 
 ## 📄 Requirements
+
 macOS 14 Sonoma or later, on Apple Silicon or Intel.
+
+**On macOS 27 and later** Dozer additionally needs:
+
+- **Accessibility permission** (System Settings › Privacy & Security ›
+  Accessibility). Status items are no longer separate windows there, so
+  Accessibility is the only way to learn which item belongs to which app.
+- **The app in `/Applications`** — the system ignores menu bar restrictions for
+  apps anywhere else.
+
+Neither applies on macOS 26 and earlier, where Dozer needs no permissions at all.
+
+### Platform support
+
+| macOS | Status |
+|---|---|
+| 27 Golden Gate | Supported, needs Accessibility + `/Applications` |
+| 26 Tahoe | Supported |
+| 14–15 | Supported |
+| 13 and older | Not supported (minimum is 14) |
 
 ## 🛠 Building
 
