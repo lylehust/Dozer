@@ -2,6 +2,21 @@
 <channel>
 <title>Dozer</title>
 <item>
+<title>5.1.0</title>
+<description><![CDATA[<h2>Dozer 5.1.0</h2>
+<p>Adds macOS 27 support. macOS 27 renders the whole menu bar as one window, so Dozer's original trick — inflating a status item until its neighbours are pushed off screen — stopped working: clicking a dot hid only the dot.</p>
+<p>Dozer now hides items through the menu bar allow-list introduced in macOS 27. Everything below macOS 27 keeps using the original mechanism.</p>
+<h3>New on macOS 27</h3>
+<ul>
+<li>Requires Accessibility permission, needed to read which item belongs to which app. Dozer explains this and offers to open the setting.</li>
+<li>Requires the app to live in /Applications; the system ignores the allow-list elsewhere.</li>
+<li>Hiding is per app rather than per item.</li>
+</ul>]]></description>
+<pubDate>Fri, 06 Nov 2026 09:51:54 -0500</pubDate>
+<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+<enclosure url="https://github.com/lylehust/Dozer/releases/download/v5.1.0/Dozer-5.1.0-universal.dmg" sparkle:version="52" sparkle:shortVersionString="5.1.0" length="2237230" type="application/octet-stream" sparkle:edSignature="ewDnCx+XmEvNwfVhUAljk6hD0O+A8uCXSvcEXQlfvIdToBjgU7/Maq8QaiaoSpA5xCWkCaehDARy8C90TpH1Dg=="/>
+</item>
+<item>
 <title>5.0.1</title>
 <description><![CDATA[<h2>Dozer 5.0.1</h2>
 <p>A bug-fix release for 5.0.0. No new features; updating is recommended.</p>
