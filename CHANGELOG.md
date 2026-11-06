@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 5.1.1
+
+* On macOS 27, hiding now leaves a single Dozer dot in the menu bar instead of
+  two. One dot is enough to click to bring the icons back, and it matches what
+  the pre-27 behaviour did by expanding the left dot away.
+* Visibility is restored for every dot when showing, including after a display
+  change that leaves a dot without a window.
+
 ## Version 5.1.0
 
 Adds macOS 27 support. macOS 27 renders the whole menu bar as a single window, so

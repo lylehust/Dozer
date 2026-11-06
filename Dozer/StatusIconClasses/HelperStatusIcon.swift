@@ -33,10 +33,20 @@ class HelperstatusIcon {
 
     func show() {
         statusIcon.length = StatusIconLength.show
+        statusIcon.isVisible = true
     }
 
     func hide() {
         statusIcon.length = StatusIconLength.hide
+        statusIcon.isVisible = false
+    }
+
+    /// Hides or shows the item without touching its length.
+    ///
+    /// macOS 27 caps a status item's width, so an oversized item no longer
+    /// disappears off screen; `isVisible` is what actually removes it there.
+    func setVisible(_ visible: Bool) {
+        statusIcon.isVisible = visible
     }
 
     func toggle() {

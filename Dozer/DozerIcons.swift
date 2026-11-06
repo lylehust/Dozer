@@ -183,6 +183,7 @@ public final class DozerIcons {
     public func show() {
         resetTimer()
         releaseMenuBarRestriction()
+        restoreSeparators()
         perform(action: .hide, statusIcon: .remove)
         perform(action: .show, statusIcon: .normalLeft)
         if Defaults[.noIconMode] {
@@ -241,6 +242,7 @@ public final class DozerIcons {
     /// Force show all Dozer icons
     public func showAll() {
         releaseMenuBarRestriction()
+        restoreSeparators()
         perform(action: .show, statusIcon: .remove)
         perform(action: .show, statusIcon: .normalLeft)
         perform(action: .show, statusIcon: .normalRight)
@@ -365,7 +367,26 @@ public final class DozerIcons {
             guard let self, !succeeded else { return }
             self.isRestricted = false
         }
+
+        // One separator is enough once the items are hidden: keep a single dot on
+        // screen so there is still something to click, matching what the legacy
+        // path did by expanding the left dot away.
+        perform(action: .hide, statusIcon: .normalLeft)
+        if Defaults[.noIconMode] && Defaults[.isShortcutSet] {
+            perform(action: .hide, statusIcon: .normalRight)
+        }
         return true
+    }
+
+    /// Puts back every separator dot.
+    ///
+    /// Restoring has to iterate over the dots rather than go through
+    /// `get(dozerIcon:)`: a hidden status item has no window, so position-based
+    /// lookup can no longer tell the two dots apart.
+    private func restoreSeparators() {
+        for icon in dozerIcons {
+            icon.setVisible(true)
+        }
     }
 
     private func releaseMenuBarRestriction() {
