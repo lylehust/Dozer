@@ -32,6 +32,22 @@ modern macOS.
 
 ## What's new
 
+### 5.1.2
+
+Fixes a regression from 5.1.1: **on macOS 15, 26 and older, clicking a dot stopped
+hiding the icons.** 5.1.1 hid the left dot with `NSStatusItem.isVisible` on every
+system, but below macOS 27 that removes the dot from the menu bar layout — and
+hiding its neighbours depends on that dot *staying* in the layout with a 10,000pt
+length so they get pushed off screen. Nothing moved, so nothing hid. Visibility
+is now only touched on macOS 27, and the older path is again the same code that
+shipped in 5.0.1.
+
+### 5.1.1
+
+Hiding now leaves a **single** Dozer dot on macOS 27 instead of two. One dot is
+enough to click to bring the icons back, and it matches what the older mechanism
+does by expanding the left dot away.
+
 ### 5.1.0
 
 **Adds macOS 27 support.** macOS 27 rebuilt the menu bar as a single window, so
@@ -141,12 +157,31 @@ Neither applies on macOS 26 and earlier, where Dozer needs no permissions at all
 
 ### Platform support
 
-| macOS | Status |
+| macOS | Status | Needs |
+|---|---|---|
+| 27 Golden Gate | Supported | Accessibility + app in `/Applications` |
+| 26 Tahoe | Supported | nothing |
+| 14–15 | Supported | nothing |
+| 13 and older | Not supported (minimum is 14) | — |
+
+### How hiding works on each macOS version
+
+The two generations of macOS need completely different mechanisms, so the code
+branches on the OS version at runtime (`#available(macOS 27.0, *)`). There is a
+single binary and a single download — you never choose a build by OS version.
+
+| macOS | Mechanism |
 |---|---|
-| 27 Golden Gate | Supported, needs Accessibility + `/Applications` |
-| 26 Tahoe | Supported |
-| 14–15 | Supported |
-| 13 and older | Not supported (minimum is 14) |
+| 14–26 | Grows a status item to 10,000pt so the icons to its left are pushed off the screen |
+| 27+ | Asks MenuBarAgent to show only the items to the right of the separator (an allow-list), then hides the extra dot with `isVisible` |
+
+They are not interchangeable: on macOS 27 an oversized status item is capped in
+width and no longer displaces its neighbours, and on macOS 14–26 `isVisible`
+would take the item out of the layout and stop it displacing anything.
+
+The macOS 14–26 path is the code that shipped in 5.0.1. The macOS 27 path lives
+in `Dozer/MenuBar27/`, is entered only on 27 and later, and is isolated so a
+failure there cannot affect older systems.
 
 ## 🛠 Building
 
