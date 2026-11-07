@@ -154,7 +154,9 @@ public final class DozerIcons {
 
     // MARK: Public methods
     public func hide() {
-        if hideUsingMenuBarRestriction() {
+        // macOS 27 only: the allow-list is what hides items there. Everything
+        // earlier must keep using the length-based path untouched.
+        if #available(macOS 27.0, *), hideUsingMenuBarRestriction() {
             didHideStatusBarIcons()
             hideIconAndMenu()
             return
@@ -183,7 +185,6 @@ public final class DozerIcons {
     public func show() {
         resetTimer()
         releaseMenuBarRestriction()
-        restoreSeparators()
         perform(action: .hide, statusIcon: .remove)
         perform(action: .show, statusIcon: .normalLeft)
         if Defaults[.noIconMode] {
@@ -196,7 +197,7 @@ public final class DozerIcons {
     public func toggle() {
         // On macOS 27 the separators stay on screen while items are hidden, so
         // "is the left dot hidden" no longer reflects the state; track it.
-        if MenuBarRestriction.shared.isAvailable {
+        if #available(macOS 27.0, *), MenuBarRestriction.shared.isAvailable {
             if isRestricted {
                 show()
             } else {
@@ -242,7 +243,6 @@ public final class DozerIcons {
     /// Force show all Dozer icons
     public func showAll() {
         releaseMenuBarRestriction()
-        restoreSeparators()
         perform(action: .show, statusIcon: .remove)
         perform(action: .show, statusIcon: .normalLeft)
         perform(action: .show, statusIcon: .normalRight)
@@ -370,29 +370,30 @@ public final class DozerIcons {
 
         // One separator is enough once the items are hidden: keep a single dot on
         // screen so there is still something to click, matching what the legacy
-        // path did by expanding the left dot away.
-        perform(action: .hide, statusIcon: .normalLeft)
+        // path does by expanding the left dot away.
+        //
+        // This sets `isVisible` directly rather than going through
+        // `perform(.hide, ...)`. `isVisible` must only ever be touched on macOS
+        // 27: on earlier systems it takes the item out of the menu bar layout,
+        // and the 10,000pt length that hides the neighbours needs that item to
+        // stay in the layout to displace them.
+        get(dozerIcon: .normalLeft)?.setVisible(false)
         if Defaults[.noIconMode] && Defaults[.isShortcutSet] {
-            perform(action: .hide, statusIcon: .normalRight)
+            get(dozerIcon: .normalRight)?.setVisible(false)
         }
         return true
-    }
-
-    /// Puts back every separator dot.
-    ///
-    /// Restoring has to iterate over the dots rather than go through
-    /// `get(dozerIcon:)`: a hidden status item has no window, so position-based
-    /// lookup can no longer tell the two dots apart.
-    private func restoreSeparators() {
-        for icon in dozerIcons {
-            icon.setVisible(true)
-        }
     }
 
     private func releaseMenuBarRestriction() {
         guard isRestricted else { return }
         MenuBarRestriction.shared.release()
         isRestricted = false
+        // Restoring iterates over the dots rather than going through
+        // `get(dozerIcon:)`: a hidden status item has no window, so position
+        // lookup can no longer tell the two dots apart.
+        for icon in dozerIcons {
+            icon.setVisible(true)
+        }
     }
 
     private func warnAccessibilityRequired() {

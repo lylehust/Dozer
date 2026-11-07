@@ -33,12 +33,10 @@ class HelperstatusIcon {
 
     func show() {
         statusIcon.length = StatusIconLength.show
-        statusIcon.isVisible = true
     }
 
     func hide() {
         statusIcon.length = StatusIconLength.hide
-        statusIcon.isVisible = false
     }
 
     /// Hides or shows the item without touching its length.

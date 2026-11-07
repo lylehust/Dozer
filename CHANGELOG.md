@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 5.1.2
+
+Fixes a regression introduced in 5.1.1: on macOS 15, 26 and anything else below
+27, clicking a dot stopped hiding the icons.
+
+5.1.1 set `NSStatusItem.isVisible = false` on the left dot from the shared
+`hide()` path. Below macOS 27 that takes the item out of the menu bar layout, and
+the trick that hides the neighbours depends on that item staying in the layout
+with a 10,000pt length so they get pushed off screen. With the item removed,
+nothing moved and nothing hid.
+
+`isVisible` is now only touched inside the macOS 27 code path, which is gated on
+`#available(macOS 27.0, *)` as well as on the private framework being present.
+The macOS 14–26 path is byte-for-byte the code that shipped in 5.0.1.
+
 ## Version 5.1.1
 
 * On macOS 27, hiding now leaves a single Dozer dot in the menu bar instead of
