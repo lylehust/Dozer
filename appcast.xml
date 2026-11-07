@@ -2,6 +2,16 @@
 <channel>
 <title>Dozer</title>
 <item>
+<title>5.1.2</title>
+<description><![CDATA[<h2>Dozer 5.1.2</h2>
+<p>Fixes a regression in 5.1.1: on macOS 15, 26 and older, clicking a dot stopped hiding the icons.</p>
+<p>5.1.1 hid the left dot with NSStatusItem.isVisible on every system. Below macOS 27 that takes the dot out of the menu bar layout, and hiding the neighbours depends on that dot staying in the layout with a 10,000pt length so they get pushed off screen. Nothing moved, so nothing hid.</p>
+<p>Visibility is now only touched on macOS 27, gated on the OS version. The macOS 14–26 path is the same code that shipped in 5.0.1.</p>]]></description>
+<pubDate>Sat, 07 Nov 2026 13:23:48 -0500</pubDate>
+<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+<enclosure url="https://github.com/lylehust/Dozer/releases/download/v5.1.2/Dozer-5.1.2-universal.dmg" sparkle:version="54" sparkle:shortVersionString="5.1.2" length="2237573" type="application/octet-stream" sparkle:edSignature="ov6VHH5l9J7ZT1Odgba9xubA23xkWWNd+fINfr5sbjefE/Ur/n9rjy7daKHa1hhv+AEBT8gjF+j26khq8x2uCg=="/>
+</item>
+<item>
 <title>5.1.1</title>
 <description><![CDATA[<h2>Dozer 5.1.1</h2>
 <ul>
